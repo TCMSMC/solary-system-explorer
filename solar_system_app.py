@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
+import random
 
 # Page configuration
 st.set_page_config(
@@ -21,6 +22,12 @@ tab1, tab2, tab3, tab4 = st.tabs(["Planets", "Fun Facts", "Interactive Activitie
 
 # Define planet data at the top level so it's available everywhere
 PLANETS = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+
+# Function to get shuffled planets
+def get_shuffled_planets():
+    shuffled = PLANETS.copy()
+    random.shuffle(shuffled)
+    return shuffled
 
 # Tab 1: Planets Data
 with tab1:
@@ -99,10 +106,11 @@ with tab3:
         
         # Create 8 columns for planet positions
         positions = {}
+        shuffled_planets = get_shuffled_planets()
         for position in range(1, 9):
             planet = st.selectbox(
                 f"Position {position} from the Sun:",
-                ["Select a planet"] + PLANETS,
+                ["Select a planet"] + shuffled_planets,
                 key=f"pos_{position}"
             )
             positions[position] = planet
@@ -124,12 +132,13 @@ with tab3:
         st.write("Select which planets belong in each category:")
         
         col1, col2, col3 = st.columns(3)
+        shuffled_planets = get_shuffled_planets()
         
         with col1:
             st.markdown("### Terrestrial Planets")
             terrestrial = st.multiselect(
                 "Select all terrestrial planets:",
-                PLANETS,
+                shuffled_planets,
                 key="terrestrial",
                 help="Rocky planets closer to the Sun"
             )
@@ -138,7 +147,7 @@ with tab3:
             st.markdown("### Gas Giants")
             gas_giants = st.multiselect(
                 "Select all gas giants:",
-                PLANETS,
+                shuffled_planets,
                 key="gas_giants",
                 help="Very large planets made mostly of hydrogen and helium"
             )
@@ -147,7 +156,7 @@ with tab3:
             st.markdown("### Ice Giants")
             ice_giants = st.multiselect(
                 "Select all ice giants:",
-                PLANETS,
+                shuffled_planets,
                 key="ice_giants",
                 help="Planets with icy compositions like water, ammonia, and methane"
             )
@@ -182,11 +191,12 @@ with tab3:
         
         user_answers = {}
         correct_count = 0
+        shuffled_planets = get_shuffled_planets()
         
         for fact in facts.keys():
             answer = st.selectbox(
                 f"Which planet: '{fact}'?",
-                ["Select a planet"] + PLANETS,
+                ["Select a planet"] + shuffled_planets,
                 key=f"fact_{fact}"
             )
             user_answers[fact] = answer
@@ -217,35 +227,51 @@ with tab4:
     
     st.write("Let's see how much you've learned! Try this fun quiz:")
     
+    # Initialize session state for quiz answers if not exists
+    if 'quiz_answers' not in st.session_state:
+        st.session_state.quiz_answers = {'q1': None, 'q2': None, 'q3': None}
+    
+    # Question 1
     q1 = st.radio(
         "Which planet is known as the Red Planet?",
-        ["Earth", "Mars", "Venus", "Jupiter"]
+        ["Earth", "Mars", "Venus", "Jupiter"],
+        index=None,
+        key='quiz_q1'
     )
-    if q1:
+    if q1 and q1 != st.session_state.quiz_answers['q1']:
+        st.session_state.quiz_answers['q1'] = q1
         if q1 == "Mars":
             st.success("Correct! Mars is called the Red Planet because of the iron oxide (rust) on its surface.")
         else:
-            st.error("Not quite! Mars is the Red Planet because of the iron oxide (rust) on its surface.")
+            st.error("Not quite! Try again!")
     
+    # Question 2
     q2 = st.radio(
         "Which planet has the most moons in our solar system?",
-        ["Mars", "Earth", "Saturn", "Jupiter"]
+        ["Mars", "Earth", "Saturn", "Jupiter"],
+        index=None,
+        key='quiz_q2'
     )
-    if q2:
+    if q2 and q2 != st.session_state.quiz_answers['q2']:
+        st.session_state.quiz_answers['q2'] = q2
         if q2 == "Saturn":
             st.success("Correct! Saturn has 82 moons, the most in our solar system!")
         else:
-            st.error("Actually, Saturn has the most moons - 82 of them!")
+            st.error("Not quite! Try again!")
     
+    # Question 3
     q3 = st.radio(
         "What is the hottest planet in our solar system?",
-        ["Mercury", "Venus", "Mars", "Jupiter"]
+        ["Mercury", "Venus", "Mars", "Jupiter"],
+        index=None,
+        key='quiz_q3'
     )
-    if q3:
+    if q3 and q3 != st.session_state.quiz_answers['q3']:
+        st.session_state.quiz_answers['q3'] = q3
         if q3 == "Venus":
             st.success("Correct! Even though Mercury is closer to the Sun, Venus is hotter due to its thick atmosphere!")
         else:
-            st.error("The answer is Venus! Its thick atmosphere traps heat, making it the hottest planet.")
+            st.error("Not quite! Try again!")
 
 # Footer
 st.markdown("---")
