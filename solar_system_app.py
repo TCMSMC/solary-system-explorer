@@ -267,7 +267,7 @@ with tab3:
                     st.markdown(f"""
                     <div class='error-message'>
                         <h4>Positions {positions_str} are not correct. Check these positions!</h4>
-                        <p>Remember: The order from the Sun is Mercury ☿, Venus ♀, Earth 🌍, Mars ♂, Jupiter ♃, Saturn ♄, Uranus ⛢, Neptune ♆</p>
+                        <p>Hint: Think about each planet's distance from the Sun. ☀️</p>
                     </div>
                     """, unsafe_allow_html=True)
 
