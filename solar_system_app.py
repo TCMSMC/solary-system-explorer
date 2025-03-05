@@ -307,12 +307,26 @@ with tab3:
         </div>
         """, unsafe_allow_html=True)
         
-        # Initialize the drag and drop interface
-        planets_json = str(st.session_state.shuffled_planets).replace("'", '"')
-        images_json = str(PLANET_IMAGES).replace("'", '"')
+        # Create planet elements HTML
+        planet_elements = ""
+        for planet in st.session_state.shuffled_planets:
+            planet_elements += f'''
+            <div class="planet-draggable" draggable="true" id="{planet}">
+                <img src="{PLANET_IMAGES[planet]}" style="width: 50px; height: 50px; border-radius: 50%;">
+                <span>{planet}</span>
+            </div>
+            '''
         
+        # Create drop zones HTML
+        drop_zones = ""
+        for i in range(1, 9):
+            drop_zones += f'''
+            <div class="drop-zone" data-position="{i}">Position {i}</div>
+            '''
+        
+        # Initialize the drag and drop interface
         planet_order = st.components.html(
-            DRAG_DROP_HTML % (planets_json, images_json),
+            DRAG_DROP_HTML % (planet_elements, drop_zones),
             height=400,
             key="planet_order"
         )
@@ -590,110 +604,65 @@ def get_planet_order():
     return st.session_state.get('planet_order', {}) 
 
 # Add after imports
-DRAG_DROP_HTML = """
-<div class="planet-container" id="planetSource"></div>
-<div class="solar-system" id="solarSystem">
-    <div class="sun"></div>
+DRAG_DROP_HTML = '''
+<div style="margin-bottom: 20px;">
+    <div class="planet-container" id="planetSource">
+        %s
+    </div>
+    <div class="solar-system" id="solarSystem">
+        <div class="sun"></div>
+        %s
+    </div>
 </div>
 
 <script>
-const planets = %s;
-const planetImages = %s;
-
-function initDragAndDrop() {
-    const planetSource = document.getElementById('planetSource');
-    const solarSystem = document.getElementById('solarSystem');
+document.addEventListener('DOMContentLoaded', function() {
+    const draggables = document.querySelectorAll('.planet-draggable');
+    const dropZones = document.querySelectorAll('.drop-zone');
     
-    // Clear existing content
-    planetSource.innerHTML = '';
-    Array.from(solarSystem.children).forEach(child => {
-        if (!child.classList.contains('sun')) {
-            child.remove();
-        }
-    });
-    
-    // Create draggable planets
-    planets.forEach(planet => {
-        const planetDiv = document.createElement('div');
-        planetDiv.className = 'planet-draggable';
-        planetDiv.draggable = true;
-        planetDiv.id = planet;
-        
-        const img = document.createElement('img');
-        img.src = planetImages[planet];
-        planetDiv.appendChild(img);
-        
-        const name = document.createElement('span');
-        name.textContent = planet;
-        planetDiv.appendChild(name);
-        
-        planetSource.appendChild(planetDiv);
-        
-        planetDiv.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', planet);
-            planetDiv.style.opacity = '0.4';
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', draggable.id);
+            this.style.opacity = '0.4';
         });
         
-        planetDiv.addEventListener('dragend', () => {
-            planetDiv.style.opacity = '1';
+        draggable.addEventListener('dragend', function() {
+            this.style.opacity = '1';
         });
     });
     
-    // Create drop zones
-    for (let i = 1; i <= 8; i++) {
-        const dropZone = document.createElement('div');
-        dropZone.className = 'drop-zone';
-        dropZone.id = `position${i}`;
-        dropZone.textContent = `Position ${i}`;
-        
-        dropZone.addEventListener('dragover', (e) => {
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', function(e) {
             e.preventDefault();
-            dropZone.classList.add('dragover');
+            this.classList.add('dragover');
         });
         
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
+        zone.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
         });
         
-        dropZone.addEventListener('drop', (e) => {
+        zone.addEventListener('drop', function(e) {
             e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const planetName = e.dataTransfer.getData('text/plain');
+            this.classList.remove('dragover');
+            const planetId = e.dataTransfer.getData('text/plain');
+            const planetDiv = document.getElementById(planetId);
             
-            dropZone.innerHTML = '';
-            const img = document.createElement('img');
-            img.src = planetImages[planetName];
-            img.style.width = '50px';
-            img.style.height = '50px';
-            img.style.borderRadius = '50%';
-            dropZone.appendChild(img);
-            
-            const name = document.createElement('div');
-            name.textContent = planetName;
-            name.style.fontSize = '12px';
-            name.style.color = '#8892b0';
-            name.style.marginTop = '5px';
-            dropZone.appendChild(name);
-            
-            // Update Streamlit component value
-            if (window.Streamlit) {
+            if (planetDiv) {
+                this.innerHTML = planetDiv.innerHTML;
+                this.setAttribute('data-planet', planetId);
+                
+                // Update Streamlit
                 const order = {};
-                document.querySelectorAll('.drop-zone').forEach((zone, index) => {
-                    const planetImg = zone.querySelector('img');
-                    if (planetImg) {
-                        const planetName = zone.querySelector('div').textContent;
+                dropZones.forEach((zone, index) => {
+                    const planetName = zone.getAttribute('data-planet');
+                    if (planetName) {
                         order[index + 1] = planetName;
                     }
                 });
                 window.Streamlit.setComponentValue(order);
             }
         });
-        
-        solarSystem.appendChild(dropZone);
-    }
-}
-
-// Initialize when the document is loaded
-document.addEventListener('DOMContentLoaded', initDragAndDrop);
+    });
+});
 </script>
-""" 
+''' 
