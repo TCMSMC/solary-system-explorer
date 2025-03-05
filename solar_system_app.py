@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import random
+import base64
+from pathlib import Path
 
 # Page configuration
 st.set_page_config(
@@ -78,6 +80,71 @@ st.markdown("""
         padding: 10px;
         border-radius: 10px;
     }
+    .planet-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    .planet-draggable {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        cursor: move;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #172a45;
+        color: #64ffda;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .planet-draggable img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+    }
+    .planet-draggable:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 15px rgba(100, 255, 218, 0.3);
+    }
+    .solar-system {
+        background: linear-gradient(to right, #000000, #0a192f, #000000);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        overflow-x: auto;
+    }
+    .drop-zone {
+        width: 90px;
+        height: 90px;
+        border: 2px dashed #64ffda;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64ffda;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+    .drop-zone.dragover {
+        background: rgba(100, 255, 218, 0.1);
+        transform: scale(1.1);
+    }
+    .sun {
+        width: 100px;
+        height: 100px;
+        background: #FFD700;
+        border-radius: 50%;
+        box-shadow: 0 0 30px #FFD700;
+        flex-shrink: 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,6 +161,18 @@ PLANET_EMOJIS = {
     'Saturn': '♄',
     'Uranus': '⛢',
     'Neptune': '♆'
+}
+
+# Update PLANET_IMAGES with actual NASA images
+PLANET_IMAGES = {
+    'Mercury': 'https://science.nasa.gov/wp-content/uploads/2023/09/mercury.png',
+    'Venus': 'https://science.nasa.gov/wp-content/uploads/2023/09/venus.png',
+    'Earth': 'https://science.nasa.gov/wp-content/uploads/2023/09/earth.png',
+    'Mars': 'https://science.nasa.gov/wp-content/uploads/2023/09/mars.png',
+    'Jupiter': 'https://science.nasa.gov/wp-content/uploads/2023/09/jupiter.png',
+    'Saturn': 'https://science.nasa.gov/wp-content/uploads/2023/09/saturn.png',
+    'Uranus': 'https://science.nasa.gov/wp-content/uploads/2023/09/uranus.png',
+    'Neptune': 'https://science.nasa.gov/wp-content/uploads/2023/09/neptune.png'
 }
 
 # Function to get shuffled planets
@@ -224,32 +303,27 @@ with tab3:
         st.markdown("""
         <div class='planet-card'>
             <h3>🌠 Put the Planets in Order from the Sun</h3>
-            <p style='color: #8892b0;'>Select the correct position for each planet, starting from the closest to the Sun!</p>
+            <p style='color: #8892b0;'>Drag and drop the planets into their correct positions, starting from the closest to the Sun!</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Create 8 columns for planet positions
-        positions = {}
-        cols = st.columns(4)
-        for position in range(1, 9):
-            col_idx = (position - 1) % 4
-            with cols[col_idx]:
-                planet = st.selectbox(
-                    f"Position {position} {PLANET_EMOJIS.get(PLANETS[position-1], '🌍')}",
-                    ["Select a planet"] + [f"{PLANET_EMOJIS[p]} {p}" for p in st.session_state.shuffled_planets],
-                    key=f"pos_{position}"
-                )
-                positions[position] = planet.split()[-1] if planet != "Select a planet" else planet
+        # Initialize the drag and drop interface
+        st.components.html(
+            DRAG_DROP_HTML % (
+                str(st.session_state.shuffled_planets),
+                str(PLANET_IMAGES)
+            ),
+            height=400
+        )
         
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("🔍 Check Order", use_container_width=True):
-                correct_order = PLANETS
-                user_order = [p for p in positions.values() if p != "Select a planet"]
-                
-                if len(user_order) < 8:
-                    st.warning("🚨 Please select all planets before checking!")
-                elif user_order == correct_order:
+        # Add a check button
+        if st.button("🔍 Check Order", use_container_width=True):
+            planet_order = get_planet_order()
+            if len(planet_order) < 8:
+                st.warning("🚨 Please place all planets before checking!")
+            else:
+                user_order = [planet_order[i] for i in range(1, 9)]
+                if user_order == PLANETS:
                     st.markdown("""
                     <div class='success-message'>
                         <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
@@ -259,7 +333,7 @@ with tab3:
                     st.balloons()
                 else:
                     incorrect_positions = []
-                    for i, (user_planet, correct_planet) in enumerate(zip(user_order, correct_order)):
+                    for i, (user_planet, correct_planet) in enumerate(zip(user_order, PLANETS)):
                         if user_planet != correct_planet:
                             incorrect_positions.append(i + 1)
                     
@@ -460,4 +534,150 @@ st.markdown("""
     <br>
     <small>Explore the cosmos and never stop learning! 🌟</small>
 </div>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
+
+# Add this function after the get_shuffled_planets function
+def create_solar_system_diagram(positions):
+    """Create a visual representation of the solar system with planet positions"""
+    html = """
+    <div style="background: linear-gradient(to right, #000000, #0a192f, #000000); 
+                padding: 20px; border-radius: 15px; margin: 20px 0; 
+                position: relative; height: 200px; overflow: hidden;">
+        <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%);">
+            <div style="width: 50px; height: 50px; background: #FFD700; 
+                     border-radius: 50%; box-shadow: 0 0 20px #FFD700;">
+            </div>
+        </div>
+    """
+    
+    for i, planet in enumerate(positions.values(), 1):
+        if planet != "Select a planet":
+            left_pos = 70 + (i * 80)  # Spacing between planets
+            html += f"""
+            <div style="position: absolute; left: {left_pos}px; top: 50%; 
+                        transform: translateY(-50%); text-align: center;">
+                <div style="font-size: 12px; color: #64ffda; margin-bottom: 5px;">
+                    Position {i}
+                </div>
+                <img src="{PLANET_IMAGES[planet]}" 
+                     style="width: 40px; height: 40px; border-radius: 50%;">
+                <div style="font-size: 12px; color: #8892b0; margin-top: 5px;">
+                    {planet}
+                </div>
+            </div>
+            """
+        else:
+            left_pos = 70 + (i * 80)
+            html += f"""
+            <div style="position: absolute; left: {left_pos}px; top: 50%; 
+                        transform: translateY(-50%); text-align: center;">
+                <div style="font-size: 12px; color: #64ffda; margin-bottom: 5px;">
+                    Position {i}
+                </div>
+                <div style="width: 40px; height: 40px; border: 2px dashed #64ffda; 
+                           border-radius: 50%; margin: 0 auto;">
+                </div>
+            </div>
+            """
+    
+    html += "</div>"
+    return html 
+
+# Add this function after your other functions
+def get_planet_order():
+    return st.session_state.get('planet_order', {}) 
+
+# Add after imports
+DRAG_DROP_HTML = """
+<div class="planet-container" id="planetSource">
+    <!-- Planets will be inserted here by JavaScript -->
+</div>
+
+<div class="solar-system" id="solarSystem">
+    <div class="sun"></div>
+    <!-- Drop zones will be inserted here by JavaScript -->
+</div>
+
+<script>
+function initDragAndDrop() {
+    const planets = %s;  // Will be replaced with Python planet list
+    const planetImages = %s;  // Will be replaced with Python planet images dict
+    
+    // Create draggable planets
+    const planetSource = document.getElementById('planetSource');
+    planets.forEach(planet => {
+        const planetDiv = document.createElement('div');
+        planetDiv.className = 'planet-draggable';
+        planetDiv.draggable = true;
+        planetDiv.id = planet;
+        
+        const img = document.createElement('img');
+        img.src = planetImages[planet];
+        planetDiv.appendChild(img);
+        
+        const name = document.createElement('span');
+        name.textContent = planet;
+        planetDiv.appendChild(name);
+        
+        planetSource.appendChild(planetDiv);
+        
+        planetDiv.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', planet);
+            setTimeout(() => planetDiv.style.opacity = '0.4', 0);
+        });
+        
+        planetDiv.addEventListener('dragend', () => {
+            planetDiv.style.opacity = '1';
+        });
+    });
+    
+    // Create drop zones
+    const solarSystem = document.getElementById('solarSystem');
+    for (let i = 1; i <= 8; i++) {
+        const dropZone = document.createElement('div');
+        dropZone.className = 'drop-zone';
+        dropZone.id = `position${i}`;
+        dropZone.textContent = `Position ${i}`;
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const planetName = e.dataTransfer.getData('text/plain');
+            
+            // Update the drop zone content
+            dropZone.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = planetImages[planetName];
+            img.style.width = '50px';
+            img.style.height = '50px';
+            img.style.borderRadius = '50%';
+            dropZone.appendChild(img);
+            
+            // Store the current order in window.planetOrder
+            window.planetOrder = window.planetOrder || {};
+            window.planetOrder[i] = planetName;
+            
+            // Send the current order to Streamlit
+            window.parent.postMessage({
+                type: 'planetOrder',
+                order: window.planetOrder
+            }, '*');
+        });
+        
+        solarSystem.appendChild(dropZone);
+    }
+}
+
+// Initialize when the document is loaded
+document.addEventListener('DOMContentLoaded', initDragAndDrop);
+</script>
+""" 
