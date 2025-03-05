@@ -133,7 +133,22 @@ with tab3:
                 st.success("🎉 Fantastic! You've ordered the planets correctly!")
                 st.balloons()
             else:
-                st.error("Not quite right. Try again! Hint: Mercury is closest to the Sun.")
+                # Find which positions are incorrect
+                incorrect_positions = []
+                for i, (user_planet, correct_planet) in enumerate(zip(user_order, correct_order)):
+                    if user_planet != correct_planet:
+                        incorrect_positions.append(i + 1)
+                
+                # Provide specific feedback
+                if len(incorrect_positions) == 1:
+                    st.error(f"Position {incorrect_positions[0]} is not correct. Check which planet should be in this position!")
+                else:
+                    positions_str = ", ".join(str(pos) for pos in incorrect_positions)
+                    st.error(f"Positions {positions_str} are not correct. Check these positions!")
+                
+                # Give a helpful hint about the order
+                if incorrect_positions:
+                    st.info("Remember: The order from the Sun is Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.")
     
     elif activity == "Planet Classification":
         st.subheader("Classify the Planets")
