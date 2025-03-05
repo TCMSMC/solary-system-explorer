@@ -303,63 +303,86 @@ with tab3:
         st.markdown("""
         <div class='planet-card'>
             <h3>🌠 Put the Planets in Order from the Sun</h3>
-            <p style='color: #8892b0;'>Drag and drop the planets into their correct positions, starting from the closest to the Sun!</p>
+            <p style='color: #8892b0;'>Select the planets in order, starting from the closest to the Sun!</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Create planet elements HTML
-        planet_elements = ""
-        for planet in st.session_state.shuffled_planets:
-            planet_elements += f'''
-            <div class="planet-draggable" draggable="true" id="{planet}">
-                <img src="{PLANET_IMAGES[planet]}" style="width: 50px; height: 50px; border-radius: 50%;">
-                <span>{planet}</span>
-            </div>
-            '''
+        # Create columns for planet selection
+        cols = st.columns(4)
+        user_order = []
         
-        # Create drop zones HTML
-        drop_zones = ""
-        for i in range(1, 9):
-            drop_zones += f'''
-            <div class="drop-zone" data-position="{i}">Position {i}</div>
-            '''
+        # Initialize session state for selected planets if not exists
+        if 'selected_planets' not in st.session_state:
+            st.session_state.selected_planets = set()
         
-        # Initialize the drag and drop interface
-        planet_order = st.components.html(
-            DRAG_DROP_HTML % (planet_elements, drop_zones),
-            height=400,
-            key="planet_order"
-        )
+        # Create selectboxes for planet positions
+        for i in range(8):
+            with cols[i % 4]:
+                # Filter out already selected planets
+                available_planets = ["Select a planet"] + [
+                    planet for planet in st.session_state.shuffled_planets 
+                    if planet not in st.session_state.selected_planets
+                ]
+                
+                # Create selectbox for this position
+                selected = st.selectbox(
+                    f"Position {i + 1}",
+                    available_planets,
+                    key=f"position_{i}"
+                )
+                
+                # Update selected planets
+                if selected != "Select a planet":
+                    st.session_state.selected_planets.add(selected)
+                    user_order.append(selected)
+                
+                # Show planet image if selected
+                if selected != "Select a planet":
+                    st.image(
+                        PLANET_IMAGES[selected],
+                        caption=selected,
+                        width=100
+                    )
+        
+        # Add a reset button
+        if st.button("🔄 Reset Selections", key="reset_order"):
+            st.session_state.selected_planets = set()
+            st.rerun()
         
         # Add a check button
         if st.button("🔍 Check Order", use_container_width=True):
-            if not planet_order:
-                st.warning("🚨 Please place all planets before checking!")
+            if len(user_order) < 8:
+                st.warning("🚨 Please select all planets before checking!")
+            elif user_order == PLANETS:
+                st.markdown("""
+                <div class='success-message'>
+                    <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
+                    <p>You're a true space explorer!</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.balloons()
             else:
-                user_order = [planet_order.get(str(i)) for i in range(1, 9)]
-                if None in user_order:
-                    st.warning("🚨 Please place all planets before checking!")
-                elif user_order == PLANETS:
-                    st.markdown("""
-                    <div class='success-message'>
-                        <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
-                        <p>You're a true space explorer!</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.balloons()
-                else:
-                    incorrect_positions = []
-                    for i, (user_planet, correct_planet) in enumerate(zip(user_order, PLANETS)):
-                        if user_planet != correct_planet:
-                            incorrect_positions.append(i + 1)
-                    
-                    positions_str = ", ".join(str(pos) for pos in incorrect_positions)
-                    st.markdown(f"""
-                    <div class='error-message'>
-                        <h4>Positions {positions_str} are not correct. Check these positions!</h4>
-                        <p>Hint: Think about each planet's distance from the Sun. ☀️</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                incorrect_positions = []
+                for i, (user_planet, correct_planet) in enumerate(zip(user_order, PLANETS)):
+                    if user_planet != correct_planet:
+                        incorrect_positions.append(i + 1)
+                
+                positions_str = ", ".join(str(pos) for pos in incorrect_positions)
+                st.markdown(f"""
+                <div class='error-message'>
+                    <h4>Positions {positions_str} are not correct. Check these positions!</h4>
+                    <p>Hint: Think about each planet's distance from the Sun. ☀️</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+        # Show the current order diagram
+        if len(user_order) > 0:
+            st.markdown("### Current Order:")
+            cols = st.columns(8)
+            for i, planet in enumerate(user_order):
+                with cols[i]:
+                    st.image(PLANET_IMAGES[planet], width=50)
+                    st.caption(f"{i+1}. {planet}")
 
     elif activity == "Planet Classification":
         st.subheader("Classify the Planets")
