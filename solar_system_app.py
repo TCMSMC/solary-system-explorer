@@ -319,189 +319,158 @@ with tab3:
         </div>
         """, unsafe_allow_html=True)
 
-        # Create the HTML for the drag-and-drop interface
-        planets_html = ""
-        for planet in st.session_state.shuffled_planets:
-            planets_html += f"""
-            <div class="planet-draggable" draggable="true" id="{planet}"
-                 style="background: {PLANET_COLORS[planet]};">
-                <span>{planet}</span>
-            </div>
-            """
+        # Create HTML for planets and drop zones
+        planets_html = "".join([
+            f'<div class="planet" draggable="true" data-planet="{planet}" '
+            f'style="background-color: {PLANET_COLORS[planet]};">'
+            f'<span>{planet}</span></div>'
+            for planet in st.session_state.shuffled_planets
+        ])
 
-        drop_zones_html = ""
-        for i in range(1, 9):
-            drop_zones_html += f"""
-            <div class="drop-zone" data-position="{i}">
-                <div class="position-label">Position {i}</div>
-            </div>
-            """
+        drop_zones_html = "".join([
+            f'<div class="drop-zone" data-position="{i}"><span>Position {i}</span></div>'
+            for i in range(1, 9)
+        ])
 
-        # Initialize the drag and drop interface
+        # Create the drag and drop interface
         st.components.html(
             f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <style>
-                    .planet-container {{
-                        display: flex;
-                        gap: 15px;
-                        margin-bottom: 20px;
-                        padding: 20px;
-                        background: rgba(23, 42, 69, 0.5);
-                        border-radius: 10px;
-                        min-height: 100px;
-                        align-items: center;
-                    }}
-                    .planet-draggable {{
-                        width: 70px;
-                        height: 70px;
-                        border-radius: 50%;
-                        cursor: move;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: white;
-                        font-weight: bold;
-                        text-align: center;
-                        box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-                        transition: all 0.3s ease;
-                        position: relative;
-                    }}
-                    .planet-name {{
-                        font-size: 12px;
-                        position: absolute;
-                        bottom: -20px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        white-space: nowrap;
-                        color: #64ffda;
-                    }}
-                    .solar-system {{
-                        background: linear-gradient(to right, #000000, #0a192f, #000000);
-                        padding: 30px;
-                        border-radius: 15px;
-                        margin: 20px 0;
-                        min-height: 180px;
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        overflow-x: auto;
-                    }}
-                    .sun {{
-                        width: 100px;
-                        height: 100px;
-                        background: radial-gradient(#FFD700, #FFA500);
-                        border-radius: 50%;
-                        box-shadow: 0 0 30px #FFD700;
-                        margin-right: 20px;
-                    }}
-                    .drop-zone {{
-                        width: 70px;
-                        height: 70px;
-                        border: 2px dashed #64ffda;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.3s ease;
-                        position: relative;
-                    }}
-                    .position-label {{
-                        position: absolute;
-                        bottom: -25px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        white-space: nowrap;
-                        color: #64ffda;
-                        font-size: 12px;
-                    }}
-                    .drop-zone.dragover {{
-                        background: rgba(100, 255, 218, 0.2);
-                        transform: scale(1.1);
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="planet-container">
+            <style>
+                .container {{ padding: 20px; }}
+                .planets-container {{
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                    padding: 10px;
+                    background: rgba(0,0,0,0.2);
+                    border-radius: 10px;
+                }}
+                .solar-system {{
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 20px;
+                    background: linear-gradient(to right, #000000, #0a192f, #000000);
+                    border-radius: 10px;
+                    overflow-x: auto;
+                }}
+                .sun {{
+                    width: 80px;
+                    height: 80px;
+                    background: radial-gradient(#FFD700, #FFA500);
+                    border-radius: 50%;
+                    box-shadow: 0 0 20px #FFD700;
+                    flex-shrink: 0;
+                }}
+                .planet {{
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: move;
+                    position: relative;
+                    box-shadow: 0 0 10px rgba(255,255,255,0.3);
+                }}
+                .planet span {{
+                    position: absolute;
+                    bottom: -20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    white-space: nowrap;
+                    color: white;
+                    font-size: 12px;
+                }}
+                .drop-zone {{
+                    width: 50px;
+                    height: 50px;
+                    border: 2px dashed #64ffda;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    position: relative;
+                }}
+                .drop-zone span {{
+                    position: absolute;
+                    bottom: -20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    white-space: nowrap;
+                    color: #64ffda;
+                    font-size: 12px;
+                }}
+                .drop-zone.dragover {{
+                    background: rgba(100,255,218,0.1);
+                    transform: scale(1.1);
+                }}
+            </style>
+            <div class="container">
+                <div class="planets-container">
                     {planets_html}
                 </div>
                 <div class="solar-system">
                     <div class="sun"></div>
                     {drop_zones_html}
                 </div>
+            </div>
+            <script>
+                const planets = document.querySelectorAll('.planet');
+                const dropZones = document.querySelectorAll('.drop-zone');
+                let draggedPlanet = null;
 
-                <script>
-                    function initDragAndDrop() {{
-                        const draggables = document.querySelectorAll('.planet-draggable');
-                        const dropZones = document.querySelectorAll('.drop-zone');
-                        let draggedElement = null;
+                planets.forEach(planet => {{
+                    planet.addEventListener('dragstart', function(e) {{
+                        draggedPlanet = this;
+                        e.dataTransfer.setData('text', planet.dataset.planet);
+                        setTimeout(() => planet.style.opacity = '0.5', 0);
+                    }});
 
-                        draggables.forEach(draggable => {{
-                            draggable.addEventListener('dragstart', (e) => {{
-                                draggedElement = draggable;
-                                e.dataTransfer.setData('text/plain', draggable.id);
-                                setTimeout(() => draggable.style.opacity = '0.4', 0);
-                            }});
+                    planet.addEventListener('dragend', function() {{
+                        planet.style.opacity = '1';
+                    }});
+                }});
 
-                            draggable.addEventListener('dragend', () => {{
-                                draggedElement.style.opacity = '1';
-                                draggedElement = null;
-                            }});
+                dropZones.forEach(zone => {{
+                    zone.addEventListener('dragover', function(e) {{
+                        e.preventDefault();
+                        this.classList.add('dragover');
+                    }});
+
+                    zone.addEventListener('dragleave', function() {{
+                        this.classList.remove('dragover');
+                    }});
+
+                    zone.addEventListener('drop', function(e) {{
+                        e.preventDefault();
+                        this.classList.remove('dragover');
+                        
+                        const planetName = e.dataTransfer.getData('text');
+                        const color = draggedPlanet.style.backgroundColor;
+                        
+                        this.innerHTML = `
+                            <div class="planet" style="background-color: ${{color}}">
+                                <span>${{planetName}}</span>
+                            </div>
+                            <span>Position ${{this.dataset.position}}</span>
+                        `;
+                        
+                        this.dataset.planet = planetName;
+                        
+                        const order = {{}};
+                        dropZones.forEach((z, i) => {{
+                            if (z.dataset.planet) {{
+                                order[i + 1] = z.dataset.planet;
+                            }}
                         }});
-
-                        dropZones.forEach(zone => {{
-                            zone.addEventListener('dragover', (e) => {{
-                                e.preventDefault();
-                                zone.classList.add('dragover');
-                            }});
-
-                            zone.addEventListener('dragleave', () => {{
-                                zone.classList.remove('dragover');
-                            }});
-
-                            zone.addEventListener('drop', (e) => {{
-                                e.preventDefault();
-                                zone.classList.remove('dragover');
-
-                                const planetId = e.dataTransfer.getData('text/plain');
-                                const planetColor = draggedElement.style.background;
-                                const planetName = draggedElement.querySelector('.planet-name').textContent;
-
-                                zone.innerHTML = `
-                                    <div class="planet-draggable" style="background: ${{planetColor}}">
-                                        <span class="planet-name">${{planetName}}</span>
-                                    </div>
-                                    <div class="position-label">Position ${{zone.dataset.position}}</div>
-                                `;
-                                zone.setAttribute('data-planet', planetId);
-
-                                // Update Streamlit
-                                const order = {{}};
-                                dropZones.forEach((z, index) => {{
-                                    const planet = z.getAttribute('data-planet');
-                                    if (planet) {{
-                                        order[index + 1] = planet;
-                                    }}
-                                }});
-                                window.Streamlit.setComponentValue(order);
-                            }});
-                        }});
-                    }}
-
-                    // Initialize when the document is ready
-                    if (document.readyState === 'loading') {{
-                        document.addEventListener('DOMContentLoaded', initDragAndDrop);
-                    }} else {{
-                        initDragAndDrop();
-                    }}
-                </script>
-            </body>
-            </html>
+                        
+                        window.Streamlit.setComponentValue(order);
+                    }});
+                }});
+            </script>
             """,
-            height=400,
+            height=300,
             key="planet_order"
         )
 
@@ -815,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
         zone.addEventListener('dragleave', function() {
             this.classList.remove('dragover');
         });
-        
+
         zone.addEventListener('drop', function(e) {
             e.preventDefault();
             this.classList.remove('dragover');
