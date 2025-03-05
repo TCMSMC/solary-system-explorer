@@ -311,19 +311,21 @@ with tab3:
         planets_json = str(st.session_state.shuffled_planets).replace("'", '"')
         images_json = str(PLANET_IMAGES).replace("'", '"')
         
-        st.components.html(
+        planet_order = st.components.html(
             DRAG_DROP_HTML % (planets_json, images_json),
-            height=400
+            height=400,
+            key="planet_order"
         )
         
         # Add a check button
         if st.button("🔍 Check Order", use_container_width=True):
-            planet_order = get_planet_order()
-            if len(planet_order) < 8:
+            if not planet_order:
                 st.warning("🚨 Please place all planets before checking!")
             else:
-                user_order = [planet_order[i] for i in range(1, 9)]
-                if user_order == PLANETS:
+                user_order = [planet_order.get(str(i)) for i in range(1, 9)]
+                if None in user_order:
+                    st.warning("🚨 Please place all planets before checking!")
+                elif user_order == PLANETS:
                     st.markdown("""
                     <div class='success-message'>
                         <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
@@ -589,22 +591,28 @@ def get_planet_order():
 
 # Add after imports
 DRAG_DROP_HTML = """
-<div class="planet-container" id="planetSource">
-    <!-- Planets will be inserted here by JavaScript -->
-</div>
-
+<div class="planet-container" id="planetSource"></div>
 <div class="solar-system" id="solarSystem">
     <div class="sun"></div>
-    <!-- Drop zones will be inserted here by JavaScript -->
 </div>
 
 <script>
+const planets = %s;
+const planetImages = %s;
+
 function initDragAndDrop() {
-    const planets = %s;  // Will be replaced with Python planet list
-    const planetImages = %s;  // Will be replaced with Python planet images dict
+    const planetSource = document.getElementById('planetSource');
+    const solarSystem = document.getElementById('solarSystem');
+    
+    // Clear existing content
+    planetSource.innerHTML = '';
+    Array.from(solarSystem.children).forEach(child => {
+        if (!child.classList.contains('sun')) {
+            child.remove();
+        }
+    });
     
     // Create draggable planets
-    const planetSource = document.getElementById('planetSource');
     planets.forEach(planet => {
         const planetDiv = document.createElement('div');
         planetDiv.className = 'planet-draggable';
@@ -623,7 +631,7 @@ function initDragAndDrop() {
         
         planetDiv.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', planet);
-            setTimeout(() => planetDiv.style.opacity = '0.4', 0);
+            planetDiv.style.opacity = '0.4';
         });
         
         planetDiv.addEventListener('dragend', () => {
@@ -632,7 +640,6 @@ function initDragAndDrop() {
     });
     
     // Create drop zones
-    const solarSystem = document.getElementById('solarSystem');
     for (let i = 1; i <= 8; i++) {
         const dropZone = document.createElement('div');
         dropZone.className = 'drop-zone';
@@ -653,7 +660,6 @@ function initDragAndDrop() {
             dropZone.classList.remove('dragover');
             const planetName = e.dataTransfer.getData('text/plain');
             
-            // Update the drop zone content
             dropZone.innerHTML = '';
             const img = document.createElement('img');
             img.src = planetImages[planetName];
@@ -662,15 +668,25 @@ function initDragAndDrop() {
             img.style.borderRadius = '50%';
             dropZone.appendChild(img);
             
-            // Store the current order in window.planetOrder
-            window.planetOrder = window.planetOrder || {};
-            window.planetOrder[i] = planetName;
+            const name = document.createElement('div');
+            name.textContent = planetName;
+            name.style.fontSize = '12px';
+            name.style.color = '#8892b0';
+            name.style.marginTop = '5px';
+            dropZone.appendChild(name);
             
-            // Send the current order to Streamlit
-            window.parent.postMessage({
-                type: 'planetOrder',
-                order: window.planetOrder
-            }, '*');
+            // Update Streamlit component value
+            if (window.Streamlit) {
+                const order = {};
+                document.querySelectorAll('.drop-zone').forEach((zone, index) => {
+                    const planetImg = zone.querySelector('img');
+                    if (planetImg) {
+                        const planetName = zone.querySelector('div').textContent;
+                        order[index + 1] = planetName;
+                    }
+                });
+                window.Streamlit.setComponentValue(order);
+            }
         });
         
         solarSystem.appendChild(dropZone);
