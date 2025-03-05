@@ -19,13 +19,16 @@ Let's learn about the planets, stars, and amazing space facts together!
 # Create tabs for different sections
 tab1, tab2, tab3, tab4 = st.tabs(["Planets", "Fun Facts", "Interactive Activities", "Quiz"])
 
+# Define planet data at the top level so it's available everywhere
+PLANETS = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+
 # Tab 1: Planets Data
 with tab1:
     st.header("Our Solar System's Planets")
     
     # Create a DataFrame with planet information
     planets_data = {
-        'Planet': ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'],
+        'Planet': PLANETS,
         'Type': ['Terrestrial', 'Terrestrial', 'Terrestrial', 'Terrestrial', 'Gas Giant', 'Gas Giant', 'Ice Giant', 'Ice Giant'],
         'Distance from Sun (million km)': [57.9, 108.2, 149.6, 227.9, 778.5, 1434.0, 2871.0, 4495.0],
         'Number of Moons': [0, 0, 1, 2, 79, 82, 27, 14],
@@ -45,7 +48,7 @@ with tab1:
         hide_index=True,
     )
     
-    selected_planet = st.selectbox("Select a planet to learn more!", planets_data['Planet'])
+    selected_planet = st.selectbox("Select a planet to learn more!", PLANETS)
     
     planet_facts = {
         'Mercury': "The smallest planet and closest to the Sun. It's extremely hot during the day and very cold at night!",
@@ -99,14 +102,13 @@ with tab3:
         for position in range(1, 9):
             planet = st.selectbox(
                 f"Position {position} from the Sun:",
-                ["Select a planet"] + planets_data['Planet'].tolist(),
+                ["Select a planet"] + PLANETS,
                 key=f"pos_{position}"
             )
             positions[position] = planet
         
         if st.button("Check Order"):
-            correct_order = ["Mercury", "Venus", "Earth", "Mars", 
-                           "Jupiter", "Saturn", "Uranus", "Neptune"]
+            correct_order = PLANETS
             user_order = [p for p in positions.values() if p != "Select a planet"]
             
             if len(user_order) < 8:
@@ -127,7 +129,7 @@ with tab3:
             st.markdown("### Terrestrial Planets")
             terrestrial = st.multiselect(
                 "Select all terrestrial planets:",
-                planets_data['Planet'].tolist(),
+                PLANETS,
                 key="terrestrial"
             )
         
@@ -135,7 +137,7 @@ with tab3:
             st.markdown("### Gas Giants")
             gas_giants = st.multiselect(
                 "Select all gas giants:",
-                planets_data['Planet'].tolist(),
+                PLANETS,
                 key="gas_giants"
             )
         
@@ -167,7 +169,7 @@ with tab3:
         for fact in facts.keys():
             answer = st.selectbox(
                 f"Which planet: '{fact}'?",
-                ["Select a planet"] + planets_data['Planet'].tolist(),
+                ["Select a planet"] + PLANETS,
                 key=f"fact_{fact}"
             )
             user_answers[fact] = answer
