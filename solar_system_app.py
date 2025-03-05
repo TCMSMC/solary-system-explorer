@@ -123,14 +123,15 @@ with tab3:
         st.subheader("Classify the Planets")
         st.write("Select which planets belong in each category:")
         
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             st.markdown("### Terrestrial Planets")
             terrestrial = st.multiselect(
                 "Select all terrestrial planets:",
                 PLANETS,
-                key="terrestrial"
+                key="terrestrial",
+                help="Rocky planets closer to the Sun"
             )
         
         with col2:
@@ -138,19 +139,35 @@ with tab3:
             gas_giants = st.multiselect(
                 "Select all gas giants:",
                 PLANETS,
-                key="gas_giants"
+                key="gas_giants",
+                help="Very large planets made mostly of hydrogen and helium"
+            )
+            
+        with col3:
+            st.markdown("### Ice Giants")
+            ice_giants = st.multiselect(
+                "Select all ice giants:",
+                PLANETS,
+                key="ice_giants",
+                help="Planets with icy compositions like water, ammonia, and methane"
             )
         
         if st.button("Check Classification"):
             correct_terrestrial = ["Mercury", "Venus", "Earth", "Mars"]
             correct_gas_giants = ["Jupiter", "Saturn"]
+            correct_ice_giants = ["Uranus", "Neptune"]
             
-            if set(terrestrial) == set(correct_terrestrial) and set(gas_giants) == set(correct_gas_giants):
+            if (set(terrestrial) == set(correct_terrestrial) and 
+                set(gas_giants) == set(correct_gas_giants) and 
+                set(ice_giants) == set(correct_ice_giants)):
                 st.success("🎉 Perfect classification! You're a planet expert!")
                 st.balloons()
             else:
                 st.error("Some planets are not correctly classified. Try again!")
-                st.info("Hint: Terrestrial planets are rocky and smaller, while gas giants are huge and made mostly of gas.")
+                st.info("""Hint: 
+                - Terrestrial planets are rocky and smaller (closest to the Sun)
+                - Gas giants are huge planets made mostly of hydrogen and helium
+                - Ice giants have more ices like water, ammonia, and methane""")
     
     elif activity == "Match Facts":
         st.subheader("Match the Facts to Their Planets")
