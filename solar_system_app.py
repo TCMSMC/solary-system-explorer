@@ -315,218 +315,115 @@ with tab3:
         st.markdown("""
         <div class='planet-card'>
             <h3>🌠 Put the Planets in Order from the Sun</h3>
-            <p style='color: #8892b0;'>Drag and drop the planets into their correct positions, starting from the closest to the Sun!</p>
+            <p style='color: #8892b0;'>Select the planets in order, starting from the closest to the Sun!</p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Initialize the drag and drop interface with basic HTML structure
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                .planets-source {{
-                    display: flex;
-                    gap: 15px;
-                    margin-bottom: 20px;
-                    padding: 15px;
-                    background: rgba(23, 42, 69, 0.5);
-                    border-radius: 10px;
-                    flex-wrap: wrap;
-                }}
-                .planet-circle {{
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 50%;
-                    cursor: move;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-                }}
-                .planet-name {{
-                    position: absolute;
-                    bottom: -20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    white-space: nowrap;
-                    color: white;
-                    font-size: 12px;
-                    text-shadow: 1px 1px 2px black;
-                }}
-                .solar-system-view {{
-                    display: flex;
-                    align-items: center;
-                    gap: 15px;
-                    padding: 20px;
-                    background: linear-gradient(to right, #000000, #0a192f, #000000);
-                    border-radius: 15px;
-                    overflow-x: auto;
-                    min-height: 150px;
-                }}
-                .sun {{
-                    width: 80px;
-                    height: 80px;
-                    background: radial-gradient(#FFD700, #FFA500);
-                    border-radius: 50%;
-                    box-shadow: 0 0 30px #FFD700;
-                    flex-shrink: 0;
-                }}
-                .drop-zone {{
-                    width: 60px;
-                    height: 60px;
-                    border: 2px dashed #64ffda;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                }}
-                .position-label {{
-                    position: absolute;
-                    bottom: -20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    white-space: nowrap;
-                    color: #64ffda;
-                    font-size: 12px;
-                }}
-                .drop-zone.dragover {{
-                    background: rgba(100, 255, 218, 0.1);
-                    transform: scale(1.05);
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="planets-source">
-                {"".join([
-                    f'<div class="planet-circle" draggable="true" data-name="{planet}" '
-                    f'style="background-color: {PLANET_COLORS[planet]}"><span class="planet-name">{planet}</span></div>'
-                    for planet in st.session_state.shuffled_planets
-                ])}
-            </div>
-            <div class="solar-system-view">
-                <div class="sun"></div>
-                {"".join([
-                    f'<div class="drop-zone" data-position="{i}"><span class="position-label">Position {i}</span></div>'
-                    for i in range(1, 9)
-                ])}
-            </div>
+        # Initialize the planet order in session state if not exists
+        if 'planet_positions' not in st.session_state:
+            st.session_state.planet_positions = {i: None for i in range(1, 9)}
 
-            <script>
-                function initDragAndDrop() {{
-                    const planets = document.querySelectorAll('.planet-circle');
-                    const dropZones = document.querySelectorAll('.drop-zone');
-                    let draggedPlanet = null;
+        # Create columns for the planets
+        cols = st.columns(4)
+        
+        # Create a list of available planets
+        available_planets = set(PLANETS)
+        for pos, planet in st.session_state.planet_positions.items():
+            if planet:
+                available_planets.discard(planet)
+        available_planets = list(available_planets)
+        available_planets.sort()  # Keep the list sorted
 
-                    planets.forEach(planet => {{
-                        planet.addEventListener('dragstart', e => {{
-                            draggedPlanet = planet;
-                            e.dataTransfer.setData('text/plain', planet.dataset.name);
-                            setTimeout(() => planet.style.opacity = '0.5', 0);
-                        }});
+        # Display planet selection boxes in two rows
+        for i in range(1, 9):
+            col_idx = (i - 1) % 4
+            if i <= 4:
+                with cols[col_idx]:
+                    # Create a container for the planet circle and selectbox
+                    st.markdown(f"""
+                    <div style='text-align: center; margin-bottom: 10px;'>
+                        <div style='
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 50%;
+                            margin: 0 auto 10px auto;
+                            background-color: {PLANET_COLORS.get(st.session_state.planet_positions.get(i, ""), "#172a45")};
+                            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+                        '></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    selected = st.selectbox(
+                        f"Position {i}",
+                        ["Select a planet"] + available_planets + ([st.session_state.planet_positions[i]] if st.session_state.planet_positions[i] else []),
+                        key=f"planet_pos_{i}"
+                    )
+                    
+                    # Update the planet positions
+                    if selected != "Select a planet":
+                        st.session_state.planet_positions[i] = selected
+                    else:
+                        st.session_state.planet_positions[i] = None
+            else:
+                with cols[col_idx]:
+                    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style='text-align: center; margin-bottom: 10px;'>
+                        <div style='
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 50%;
+                            margin: 0 auto 10px auto;
+                            background-color: {PLANET_COLORS.get(st.session_state.planet_positions.get(i, ""), "#172a45")};
+                            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+                        '></div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    selected = st.selectbox(
+                        f"Position {i}",
+                        ["Select a planet"] + available_planets + ([st.session_state.planet_positions[i]] if st.session_state.planet_positions[i] else []),
+                        key=f"planet_pos_{i}"
+                    )
+                    
+                    # Update the planet positions
+                    if selected != "Select a planet":
+                        st.session_state.planet_positions[i] = selected
+                    else:
+                        st.session_state.planet_positions[i] = None
 
-                        planet.addEventListener('dragend', () => {{
-                            planet.style.opacity = '1';
-                            draggedPlanet = null;
-                        }});
-                    }});
-
-                    dropZones.forEach(zone => {{
-                        zone.addEventListener('dragover', e => {{
-                            e.preventDefault();
-                            zone.classList.add('dragover');
-                        }});
-
-                        zone.addEventListener('dragleave', () => {{
-                            zone.classList.remove('dragover');
-                        }});
-
-                        zone.addEventListener('drop', e => {{
-                            e.preventDefault();
-                            zone.classList.remove('dragover');
-
-                            const planetName = e.dataTransfer.getData('text/plain');
-                            const color = draggedPlanet.style.backgroundColor;
-
-                            zone.innerHTML = `
-                                <div class="planet-circle" style="background-color: ${{color}}">
-                                    <span class="planet-name">${{planetName}}</span>
-                                </div>
-                                <span class="position-label">Position ${{zone.dataset.position}}</span>
-                            `;
-
-                            zone.dataset.planet = planetName;
-
-                            // Update Streamlit with current order
-                            const order = {{}};
-                            dropZones.forEach((z, i) => {{
-                                if (z.dataset.planet) {{
-                                    order[i + 1] = z.dataset.planet;
-                                }}
-                            }});
-
-                            if (window.Streamlit) {{
-                                window.Streamlit.setComponentValue(order);
-                            }}
-                        }});
-                    }});
-                }}
-
-                // Initialize when the document is ready
-                if (document.readyState === 'loading') {{
-                    document.addEventListener('DOMContentLoaded', initDragAndDrop);
-                }} else {{
-                    initDragAndDrop();
-                }}
-            </script>
-        </body>
-        </html>
-        """
-
-        # Render the HTML component
-        try:
-            st.components.html(
-                html_content,
-                height=350,
-                scrolling=True
-            )
-        except Exception as e:
-            st.error("There was an error initializing the drag and drop interface. Please refresh the page.")
-            st.write("Error details:", str(e))
+        # Add a reset button
+        if st.button("🔄 Reset Order", key="reset_order"):
+            st.session_state.planet_positions = {i: None for i in range(1, 9)}
+            st.rerun()
 
         # Add a check button
         if st.button("🔍 Check Order", use_container_width=True):
-            planet_order = st.session_state.get('planet_order', {})
-            if not planet_order:
-                st.warning("🚨 Please place all planets before checking!")
+            current_order = [st.session_state.planet_positions.get(i) for i in range(1, 9)]
+            
+            if None in current_order:
+                st.warning("🚨 Please select all planets before checking!")
+            elif current_order == PLANETS:
+                st.markdown("""
+                <div class='success-message'>
+                    <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
+                    <p>You're a true space explorer!</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.balloons()
             else:
-                user_order = [planet_order.get(str(i)) for i in range(1, 9)]
-                if None in user_order:
-                    st.warning("🚨 Please place all planets before checking!")
-                elif user_order == PLANETS:
-                    st.markdown("""
-                    <div class='success-message'>
-                        <h3>🎉 Fantastic! You've ordered the planets correctly!</h3>
-                        <p>You're a true space explorer!</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.balloons()
-                else:
-                    incorrect_positions = []
-                    for i, (user_planet, correct_planet) in enumerate(zip(user_order, PLANETS)):
-                        if user_planet != correct_planet:
-                            incorrect_positions.append(i + 1)
-                    
-                    positions_str = ", ".join(str(pos) for pos in incorrect_positions)
-                    st.markdown(f"""
-                    <div class='error-message'>
-                        <h4>Positions {positions_str} are not correct. Check these positions!</h4>
-                        <p>Hint: Think about each planet's distance from the Sun. ☀️</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                incorrect_positions = []
+                for i, (user_planet, correct_planet) in enumerate(zip(current_order, PLANETS)):
+                    if user_planet != correct_planet:
+                        incorrect_positions.append(i + 1)
+                
+                positions_str = ", ".join(str(pos) for pos in incorrect_positions)
+                st.markdown(f"""
+                <div class='error-message'>
+                    <h4>Positions {positions_str} are not correct. Check these positions!</h4>
+                    <p>Hint: Think about each planet's distance from the Sun. ☀️</p>
+                </div>
+                """, unsafe_allow_html=True)
 
     elif activity == "Planet Classification":
         st.subheader("Classify the Planets")
