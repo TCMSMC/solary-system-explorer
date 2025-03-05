@@ -308,11 +308,11 @@ with tab3:
         """, unsafe_allow_html=True)
         
         # Initialize the drag and drop interface
+        planets_json = str(st.session_state.shuffled_planets).replace("'", '"')
+        images_json = str(PLANET_IMAGES).replace("'", '"')
+        
         st.components.html(
-            DRAG_DROP_HTML % (
-                str(st.session_state.shuffled_planets),
-                str(PLANET_IMAGES)
-            ),
+            DRAG_DROP_HTML % (planets_json, images_json),
             height=400
         )
         
