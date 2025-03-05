@@ -10,6 +10,15 @@ st.set_page_config(
     layout="wide"
 )
 
+# Define planet data at the top level so it's available everywhere
+PLANETS = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
+
+# Function to get shuffled planets
+def get_shuffled_planets():
+    shuffled = PLANETS.copy()
+    random.shuffle(shuffled)
+    return shuffled
+
 # Initialize session state for activities if not exists
 if 'shuffled_planets' not in st.session_state:
     st.session_state.shuffled_planets = get_shuffled_planets()
@@ -23,15 +32,6 @@ Let's learn about the planets, stars, and amazing space facts together!
 
 # Create tabs for different sections
 tab1, tab2, tab3, tab4 = st.tabs(["Planets", "Fun Facts", "Interactive Activities", "Quiz"])
-
-# Define planet data at the top level so it's available everywhere
-PLANETS = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune']
-
-# Function to get shuffled planets
-def get_shuffled_planets():
-    shuffled = PLANETS.copy()
-    random.shuffle(shuffled)
-    return shuffled
 
 # Tab 1: Planets Data
 with tab1:
