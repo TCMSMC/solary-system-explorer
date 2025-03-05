@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
-from streamlit_elements import elements, dashboard, mui, html
-from streamlit_custom_notification_box import custom_notification_box
 
 # Page configuration
 st.set_page_config(
@@ -35,7 +33,6 @@ with tab1:
     }
     planets_df = pd.DataFrame(planets_data)
     
-    # Add interactivity to the table
     st.dataframe(
         planets_df,
         column_config={
@@ -48,7 +45,6 @@ with tab1:
         hide_index=True,
     )
     
-    # Add a planet selector with fun facts
     selected_planet = st.selectbox("Select a planet to learn more!", planets_data['Planet'])
     
     planet_facts = {
@@ -68,7 +64,6 @@ with tab1:
 with tab2:
     st.header("🌟 Amazing Space Facts!")
     
-    # Create expandable sections with fun facts
     with st.expander("Did you know? (Click to expand!)"):
         st.write("""
         - The Sun is so big that about 1.3 million Earths could fit inside it! 🌞
@@ -96,42 +91,69 @@ with tab3:
     )
     
     if activity == "Order the Planets":
-        st.subheader("Drag and Drop the Planets in Order from the Sun")
-        with elements("order_planets"):
-            with dashboard.Grid(columns=8):
-                for i, planet in enumerate(["Mercury", "Venus", "Earth", "Mars", 
-                                          "Jupiter", "Saturn", "Uranus", "Neptune"]):
-                    with mui.Card(key=f"planet_{i}", sx={"minWidth": 100, "margin": 1}):
-                        mui.CardContent(planet)
+        st.subheader("Put the Planets in Order from the Sun")
+        st.write("Select the correct position for each planet:")
+        
+        # Create 8 columns for planet positions
+        positions = {}
+        for position in range(1, 9):
+            planet = st.selectbox(
+                f"Position {position} from the Sun:",
+                ["Select a planet"] + planets_data['Planet'].tolist(),
+                key=f"pos_{position}"
+            )
+            positions[position] = planet
         
         if st.button("Check Order"):
-            st.success("Great job! You've ordered the planets correctly from the Sun!")
+            correct_order = ["Mercury", "Venus", "Earth", "Mars", 
+                           "Jupiter", "Saturn", "Uranus", "Neptune"]
+            user_order = [p for p in positions.values() if p != "Select a planet"]
+            
+            if len(user_order) < 8:
+                st.warning("Please select all planets before checking!")
+            elif user_order == correct_order:
+                st.success("🎉 Fantastic! You've ordered the planets correctly!")
+                st.balloons()
+            else:
+                st.error("Not quite right. Try again! Hint: Mercury is closest to the Sun.")
     
     elif activity == "Planet Classification":
         st.subheader("Classify the Planets")
+        st.write("Select which planets belong in each category:")
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("### Drag planets to their correct classification:")
-            with elements("planet_types"):
-                with dashboard.Grid(columns=2):
-                    with mui.Paper(key="terrestrial", sx={"padding": 2, "background": "#f5f5f5"}):
-                        mui.Typography("Terrestrial Planets")
-                    with mui.Paper(key="gas_giants", sx={"padding": 2, "background": "#f5f5f5"}):
-                        mui.Typography("Gas Giants")
+            st.markdown("### Terrestrial Planets")
+            terrestrial = st.multiselect(
+                "Select all terrestrial planets:",
+                planets_data['Planet'].tolist(),
+                key="terrestrial"
+            )
         
         with col2:
-            st.markdown("### Available Planets:")
-            with elements("planets_to_classify"):
-                with dashboard.Grid(columns=4):
-                    for planet in planets_data['Planet']:
-                        with mui.Card(key=planet, sx={"margin": 1}):
-                            mui.CardContent(planet)
+            st.markdown("### Gas Giants")
+            gas_giants = st.multiselect(
+                "Select all gas giants:",
+                planets_data['Planet'].tolist(),
+                key="gas_giants"
+            )
+        
+        if st.button("Check Classification"):
+            correct_terrestrial = ["Mercury", "Venus", "Earth", "Mars"]
+            correct_gas_giants = ["Jupiter", "Saturn"]
+            
+            if set(terrestrial) == set(correct_terrestrial) and set(gas_giants) == set(correct_gas_giants):
+                st.success("🎉 Perfect classification! You're a planet expert!")
+                st.balloons()
+            else:
+                st.error("Some planets are not correctly classified. Try again!")
+                st.info("Hint: Terrestrial planets are rocky and smaller, while gas giants are huge and made mostly of gas.")
     
     elif activity == "Match Facts":
         st.subheader("Match the Facts to Their Planets")
         
-        matching_facts = {
+        facts = {
             "Hottest planet in our solar system": "Venus",
             "Has the Great Red Spot storm": "Jupiter",
             "Known as the Red Planet": "Mars",
@@ -139,28 +161,43 @@ with tab3:
             "Our home planet": "Earth"
         }
         
-        with elements("match_facts"):
-            with dashboard.Grid(columns=2):
-                # Facts column
-                with mui.Paper(key="facts", sx={"padding": 2, "background": "#f5f5f5"}):
-                    for fact in matching_facts.keys():
-                        with mui.Card(key=f"fact_{fact}", sx={"margin": 1}):
-                            mui.CardContent(fact)
-                
-                # Planets column
-                with mui.Paper(key="planets", sx={"padding": 2, "background": "#f5f5f5"}):
-                    for planet in matching_facts.values():
-                        with mui.Card(key=f"planet_{planet}", sx={"margin": 1}):
-                            mui.CardContent(planet)
+        user_answers = {}
+        correct_count = 0
+        
+        for fact in facts.keys():
+            answer = st.selectbox(
+                f"Which planet: '{fact}'?",
+                ["Select a planet"] + planets_data['Planet'].tolist(),
+                key=f"fact_{fact}"
+            )
+            user_answers[fact] = answer
+        
+        if st.button("Check Matches"):
+            all_correct = True
+            for fact, correct_planet in facts.items():
+                if user_answers[fact] == "Select a planet":
+                    st.warning(f"Please select a planet for: '{fact}'")
+                    all_correct = False
+                    break
+                elif user_answers[fact] == correct_planet:
+                    correct_count += 1
+                    st.success(f"Correct! '{fact}' matches with {correct_planet}!")
+                else:
+                    all_correct = False
+                    st.error(f"'{fact}' is not correct. Try again!")
+            
+            if all_correct:
+                st.success(f"🎉 Amazing! You matched all {len(facts)} facts correctly!")
+                st.balloons()
+            else:
+                st.info(f"You got {correct_count} out of {len(facts)} correct. Keep trying!")
 
 # Tab 4: Quiz
 with tab4:
     st.header("🎯 Test Your Knowledge!")
     
-    # Simple quiz system
     st.write("Let's see how much you've learned! Try this fun quiz:")
     
-    # Question 1
     q1 = st.radio(
         "Which planet is known as the Red Planet?",
         ["Earth", "Mars", "Venus", "Jupiter"]
@@ -171,7 +208,6 @@ with tab4:
         else:
             st.error("Not quite! Mars is the Red Planet because of the iron oxide (rust) on its surface.")
     
-    # Question 2
     q2 = st.radio(
         "Which planet has the most moons in our solar system?",
         ["Mars", "Earth", "Saturn", "Jupiter"]
@@ -182,7 +218,6 @@ with tab4:
         else:
             st.error("Actually, Saturn has the most moons - 82 of them!")
     
-    # Question 3
     q3 = st.radio(
         "What is the hottest planet in our solar system?",
         ["Mercury", "Venus", "Mars", "Jupiter"]
